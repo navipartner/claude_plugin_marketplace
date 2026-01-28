@@ -1,0 +1,10 @@
+{
+  "name": "al-id-manager",
+  "version": "1.0.0",
+  "description": "Get next available AL object IDs, table/tableextension field IDs, and enum/enumextension value IDs",
+  "author": {
+    "name": "NaviPartner",
+    "email": "dev@navipartner.com"
+  },
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,3 @@
+# Mark binaries as binary files
+*.exe binary
+bcdev-cli-*/bin/bcdev binary

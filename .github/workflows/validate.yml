@@ -1,0 +1,59 @@
+name: Validate Plugins
+
+on: [push, pull_request]
+
+jobs:
+  validate-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate AL ID Manager
+        run: claude plugin validate --plugin-dir ./al-id-manager
+
+      - name: Validate BC Dev CLI plugins
+        run: |
+          for plugin in bcdev-cli-win-x64 bcdev-cli-linux-x64 bcdev-cli-linux-arm64 bcdev-cli-osx-arm64; do
+            echo "Validating $plugin..."
+            claude plugin validate --plugin-dir ./$plugin
+          done
+
+      - name: Validate JSON syntax
+        run: |
+          for f in $(find . -name "*.json" -not -path "./.git/*"); do
+            echo "Checking $f..."
+            jq . "$f" > /dev/null
+          done
+
+  smoke-test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check binary exists and is executable
+        run: |
+          chmod +x ./bcdev-cli-linux-x64/bin/bcdev
+          ./bcdev-cli-linux-x64/bin/bcdev --help
+
+  smoke-test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check binary exists and runs
+        run: |
+          chmod +x ./bcdev-cli-osx-arm64/bin/bcdev
+          ./bcdev-cli-osx-arm64/bin/bcdev --help
+
+  smoke-test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check binary exists and runs
+        run: ./bcdev-cli-win-x64/bin/bcdev.exe --help
