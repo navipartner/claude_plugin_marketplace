@@ -1,0 +1,71 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "navipartner-bc-tools",
+  "description": "Claude Code plugins for Business Central AL development at NaviPartner",
+  "owner": {
+    "name": "NaviPartner",
+    "email": "dev@navipartner.com"
+  },
+  "plugins": [
+    {
+      "name": "al-id-manager",
+      "description": "Get next available AL object IDs, table/tableextension field IDs, and enum/enumextension value IDs",
+      "version": "1.0.0",
+      "author": {
+        "name": "NaviPartner",
+        "email": "dev@navipartner.com"
+      },
+      "source": "./al-id-manager",
+      "category": "development",
+      "tags": ["business-central", "al", "id-management"]
+    },
+    {
+      "name": "bcdev-cli-win-x64",
+      "description": "BC Dev CLI v0.4 for Windows x64 - download symbols, compile, publish, and test AL apps",
+      "version": "1.0.0",
+      "author": {
+        "name": "NaviPartner",
+        "email": "dev@navipartner.com"
+      },
+      "source": "./bcdev-cli-win-x64",
+      "category": "development",
+      "tags": ["business-central", "al", "cli", "windows"]
+    },
+    {
+      "name": "bcdev-cli-linux-x64",
+      "description": "BC Dev CLI v0.4 for Linux x64 - download symbols, compile, publish, and test AL apps",
+      "version": "1.0.0",
+      "author": {
+        "name": "NaviPartner",
+        "email": "dev@navipartner.com"
+      },
+      "source": "./bcdev-cli-linux-x64",
+      "category": "development",
+      "tags": ["business-central", "al", "cli", "linux"]
+    },
+    {
+      "name": "bcdev-cli-linux-arm64",
+      "description": "BC Dev CLI v0.4 for Linux ARM64 - download symbols, compile, publish, and test AL apps",
+      "version": "1.0.0",
+      "author": {
+        "name": "NaviPartner",
+        "email": "dev@navipartner.com"
+      },
+      "source": "./bcdev-cli-linux-arm64",
+      "category": "development",
+      "tags": ["business-central", "al", "cli", "linux", "arm64"]
+    },
+    {
+      "name": "bcdev-cli-osx-arm64",
+      "description": "BC Dev CLI v0.4 for macOS Apple Silicon - download symbols, compile, publish, and test AL apps",
+      "version": "1.0.0",
+      "author": {
+        "name": "NaviPartner",
+        "email": "dev@navipartner.com"
+      },
+      "source": "./bcdev-cli-osx-arm64",
+      "category": "development",
+      "tags": ["business-central", "al", "cli", "macos", "arm64"]
+    }
+  ]
+}
