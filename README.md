@@ -7,7 +7,7 @@ A Claude Code plugin marketplace for Business Central AL development at NaviPart
 Add this marketplace to Claude Code:
 
 ```bash
-claude /plugin add-marketplace https://github.com/navipartner/curitiba
+claude /plugin add-marketplace https://github.com/navipartner/claude_plugin_marketplace
 ```
 
 Then install the plugins you need:

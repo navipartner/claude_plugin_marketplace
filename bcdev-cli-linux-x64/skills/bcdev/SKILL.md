@@ -1,5 +1,5 @@
 ---
-name: bcdev-cli
+name: bcdev
 description: This skill should be used when the user wants to "download symbols", "compile AL app", "publish to Business Central", "run BC tests", or is working with Business Central development workflows.
 ---
 
