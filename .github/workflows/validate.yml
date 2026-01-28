@@ -17,13 +17,13 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Validate AL ID Manager
-        run: claude plugin validate --plugin-dir ./al-id-manager
+        run: claude plugin validate ./al-id-manager
 
       - name: Validate BC Dev CLI plugins
         run: |
           for plugin in bcdev-cli-win-x64 bcdev-cli-linux-x64 bcdev-cli-linux-arm64 bcdev-cli-osx-arm64; do
             echo "Validating $plugin..."
-            claude plugin validate --plugin-dir ./$plugin
+            claude plugin validate ./$plugin
           done
 
       - name: Validate JSON syntax
