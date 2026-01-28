@@ -1,0 +1,10 @@
+{
+  "name": "bcdev-cli-osx-arm64",
+  "version": "1.0.0",
+  "description": "BC Dev CLI v0.4 for macOS Apple Silicon - download symbols, compile, publish, and test AL apps",
+  "author": {
+    "name": "NaviPartner",
+    "email": "dev@navipartner.com"
+  },
+  "license": "UNLICENSED"
+}
