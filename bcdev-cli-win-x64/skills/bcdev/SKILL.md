@@ -12,7 +12,7 @@ This skill provides instructions for using the BC Dev CLI to download symbols, c
 **Path:** `${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe`
 
 **Windows (win-x64):**
-- SmartScreen may warn on first run; click "More info" then "Run anyway"
+- SmartScreen may warn on first run; click "More info" → "Run anyway"
 
 ## Prerequisites
 
@@ -33,17 +33,27 @@ Before using the CLI, ensure you have:
 ## Typical Workflow
 
 ```
-symbols -> compile -> publish -> test
+symbols → compile → publish → test
 ```
 
 ## Command: bcdev symbols
 
-Downloads symbol packages from Business Central for compilation dependencies.
+Downloads symbol packages for compilation dependencies. By default, downloads from Microsoft's public NuGet feeds (faster, works offline/CI). Optionally download from a BC server with `-fromServer`.
 
-**Usage:**
+**NuGet mode (default):**
+```bash
+# Download symbols from NuGet feeds (no BC server required)
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols -appJsonPath "/path/to/app.json"
+
+# With country-specific packages (e.g., us, de, dk)
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols -appJsonPath "/path/to/app.json" -country us
+```
+
+**Server mode (opt-in):**
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols \
   -appJsonPath "/path/to/app.json" \
+  -fromServer \
   -launchJsonPath "/path/to/.vscode/launch.json" \
   -launchJsonName "Your Configuration Name" \
   -Username "bcuser" \
@@ -55,15 +65,17 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols \
 | Option | Required | Description |
 |--------|----------|-------------|
 | `-appJsonPath` | Yes | Path to app.json file |
-| `-launchJsonPath` | Yes | Path to launch.json |
-| `-launchJsonName` | Yes | Configuration name in launch.json |
 | `-packageCachePath` | No | Output folder (defaults to .alpackages next to app.json) |
-| `-Username` | No | For UserPassword auth |
-| `-Password` | No | For UserPassword auth |
+| `-country` | No | Country code for localized symbols (e.g., us, de, dk). Default `w1` uses country-less packages |
+| `-fromServer` | No | Download from BC server instead of NuGet feeds |
+| `-launchJsonPath` | No* | Path to launch.json (*required with `-fromServer`) |
+| `-launchJsonName` | No* | Configuration name (*required with `-fromServer`) |
+| `-Username` | No** | For UserPassword auth (**required for UserPassword auth with `-fromServer`) |
+| `-Password` | No** | For UserPassword auth (**required for UserPassword auth with `-fromServer`) |
 
 ## Command: bcdev compile
 
-Compiles an AL application. The compiler (alc.exe) is automatically downloaded based on the platform version in app.json.
+Compiles an AL application. The compiler (alc.exe/alc) is automatically downloaded based on the platform version in app.json.
 
 **Usage:**
 ```bash
@@ -180,8 +192,8 @@ When `-Username` and `-Password` are not provided, the CLI uses device code flow
 ## Test Iteration Workflow
 
 When iterating on tests:
-- If **test app code** is modified -> compile and publish the test app before running tests
-- If **primary app code** is modified -> compile and publish the primary app before running tests
+- If **test app code** is modified → compile and publish the test app before running tests
+- If **primary app code** is modified → compile and publish the primary app before running tests
 - Only then run `bcdev test`
 
 ## Finding launch.json Configurations
@@ -195,7 +207,8 @@ Example launch.json:
     {
       "name": "My Dev Environment",
       "type": "al",
-      "server": "https://businesscentral.dynamics.com"
+      "server": "https://businesscentral.dynamics.com",
+      ...
     }
   ]
 }
