@@ -75,7 +75,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev symbols \
 
 ## Command: bcdev compile
 
-Compiles an AL application. The compiler (alc.exe/alc) is automatically downloaded based on the platform version in app.json.
+Compiles an AL application. The compiler (alc) is automatically downloaded based on the platform version in app.json.
 
 **Usage:**
 ```bash

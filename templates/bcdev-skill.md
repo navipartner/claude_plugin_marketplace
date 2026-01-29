@@ -74,7 +74,7 @@ Downloads symbol packages for compilation dependencies. By default, downloads fr
 
 ## Command: bcdev compile
 
-Compiles an AL application. The compiler (alc.exe/alc) is automatically downloaded based on the platform version in app.json.
+Compiles an AL application. The compiler is automatically downloaded based on the platform version in app.json.
 
 **Usage:**
 ```bash
