@@ -1,5 +1,5 @@
 ---
-name: bcdev-cli
+name: bcdev
 description: This skill should be used when the user wants to "download symbols", "compile AL app", "publish to Business Central", "run BC tests", or is working with Business Central development workflows.
 ---
 
@@ -37,12 +37,22 @@ symbols → compile → publish → test
 
 ## Command: bcdev symbols
 
-Downloads symbol packages from Business Central for compilation dependencies.
+Downloads symbol packages for compilation dependencies. By default, downloads from Microsoft's public NuGet feeds (faster, works offline/CI). Optionally download from a BC server with `-fromServer`.
 
-**Usage:**
+**NuGet mode (default):**
+```bash
+# Download symbols from NuGet feeds (no BC server required)
+{{BINARY_PATH}} symbols -appJsonPath "/path/to/app.json"
+
+# With country-specific packages (e.g., us, de, dk)
+{{BINARY_PATH}} symbols -appJsonPath "/path/to/app.json" -country us
+```
+
+**Server mode (opt-in):**
 ```bash
 {{BINARY_PATH}} symbols \
   -appJsonPath "/path/to/app.json" \
+  -fromServer \
   -launchJsonPath "/path/to/.vscode/launch.json" \
   -launchJsonName "Your Configuration Name" \
   -Username "bcuser" \
@@ -54,15 +64,17 @@ Downloads symbol packages from Business Central for compilation dependencies.
 | Option | Required | Description |
 |--------|----------|-------------|
 | `-appJsonPath` | Yes | Path to app.json file |
-| `-launchJsonPath` | Yes | Path to launch.json |
-| `-launchJsonName` | Yes | Configuration name in launch.json |
 | `-packageCachePath` | No | Output folder (defaults to .alpackages next to app.json) |
-| `-Username` | No | For UserPassword auth |
-| `-Password` | No | For UserPassword auth |
+| `-country` | No | Country code for localized symbols (e.g., us, de, dk). Default `w1` uses country-less packages |
+| `-fromServer` | No | Download from BC server instead of NuGet feeds |
+| `-launchJsonPath` | No* | Path to launch.json (*required with `-fromServer`) |
+| `-launchJsonName` | No* | Configuration name (*required with `-fromServer`) |
+| `-Username` | No** | For UserPassword auth (**required for UserPassword auth with `-fromServer`) |
+| `-Password` | No** | For UserPassword auth (**required for UserPassword auth with `-fromServer`) |
 
 ## Command: bcdev compile
 
-Compiles an AL application. The compiler (alc.exe/alc) is automatically downloaded based on the platform version in app.json.
+Compiles an AL application. The compiler is automatically downloaded based on the platform version in app.json.
 
 **Usage:**
 ```bash

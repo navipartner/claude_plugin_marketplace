@@ -1,5 +1,5 @@
 ---
-name: al-id-manager
+name: get-next-id
 description: This skill should be used when the user is working in .al files for Business Central apps and creating new objects or adding new table/tableextension fields or enum/enumextension values.
 ---
 
