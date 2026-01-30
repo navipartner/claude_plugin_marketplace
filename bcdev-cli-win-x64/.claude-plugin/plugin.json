@@ -1,7 +1,7 @@
 {
   "name": "bcdev-cli-win-x64",
   "version": "1.0.0",
-  "description": "BC Dev CLI v0.4 for Windows x64 - download symbols, compile, publish, and test AL apps",
+  "description": "BC Dev CLI v0.6 for Windows x64 - download symbols, compile, publish, and test AL apps",
   "author": {
     "name": "NaviPartner",
     "email": "dev@navipartner.com"

@@ -1,7 +1,7 @@
 {
   "name": "bcdev-cli-linux-arm64",
   "version": "1.0.0",
-  "description": "BC Dev CLI v0.4 for Linux ARM64 - download symbols, compile, publish, and test AL apps",
+  "description": "BC Dev CLI v0.6 for Linux ARM64 - download symbols, compile, publish, and test AL apps",
   "author": {
     "name": "NaviPartner",
     "email": "dev@navipartner.com"
