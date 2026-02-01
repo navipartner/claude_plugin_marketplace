@@ -13,14 +13,11 @@ claude /plugin add-marketplace https://github.com/navipartner/claude_plugin_mark
 Then install the plugins you need:
 
 ```bash
-# AL ID Manager (all platforms)
+# AL ID Manager
 claude plugin install al-id-manager@navipartner-bc-tools
 
-# BC Dev CLI (choose your platform)
-claude plugin install bcdev-cli-win-x64@navipartner-bc-tools      # Windows
-claude plugin install bcdev-cli-linux-x64@navipartner-bc-tools    # Linux x64
-claude plugin install bcdev-cli-linux-arm64@navipartner-bc-tools  # Linux ARM64
-claude plugin install bcdev-cli-osx-arm64@navipartner-bc-tools    # macOS Apple Silicon
+# BC Dev CLI (universal - works on all platforms)
+claude plugin install bcdev-cli@navipartner-bc-tools
 ```
 
 ## Plugins
@@ -39,32 +36,35 @@ Allows the LLM to download symbols, compile, publish apps and run tests against 
 
 **Use when:** Working with BC development workflows - downloading dependencies, compiling, deploying, or testing.
 
-**Platform variants:**
-- `bcdev-cli-win-x64` - Windows x64
-- `bcdev-cli-linux-x64` - Linux x64
-- `bcdev-cli-linux-arm64` - Linux ARM64
-- `bcdev-cli-osx-arm64` - macOS Apple Silicon
+**Supported platforms:** macOS (arm64, x64), Linux (x64, arm64), Windows (x64)
 
-**Skill:** `bcdev-cli-*:bcdev`
+The CLI binary is automatically downloaded and cached on first use. No manual setup required.
 
-## Development
+**Skill:** `bcdev-cli:bcdev`
 
-### Syncing BC Dev CLI skills
+#### Version Override
 
-The BC Dev CLI skill content is maintained in `templates/bcdev-skill.md`. To sync changes to all platform plugins:
+To use a specific CLI version:
 
 ```bash
-./scripts/sync-skills.sh
+# macOS/Linux
+export BCDEV_CLI_VERSION=0.8
+
+# Windows
+set BCDEV_CLI_VERSION=0.8
 ```
+
+## Development
 
 ### Validating plugins
 
 ```bash
 # Validate a single plugin
 claude plugin validate --plugin-dir ./al-id-manager
+claude plugin validate --plugin-dir ./bcdev-cli
 
 # Validate all plugins
-for plugin in al-id-manager bcdev-cli-*; do
+for plugin in al-id-manager bcdev-cli; do
   claude plugin validate --plugin-dir ./$plugin
 done
 ```
@@ -73,4 +73,15 @@ done
 
 ```bash
 claude --plugin-dir ./al-id-manager
+claude --plugin-dir ./bcdev-cli
 ```
+
+### Updating BC Dev CLI version
+
+When a new BC Dev CLI version is released:
+
+1. Download all platform binaries and compute SHA256 checksums
+2. Add entries to `bcdev-cli/checksums.txt`
+3. Update `DEFAULT_VERSION` in both wrapper scripts (`bin/bcdev-ensure` and `bin/bcdev-ensure.cmd`)
+4. Bump version in `bcdev-cli/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+5. Commit and push
