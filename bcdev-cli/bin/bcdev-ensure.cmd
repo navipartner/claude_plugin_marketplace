@@ -17,9 +17,9 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-set "CACHE_DIR=%USERPROFILE%\.bcdev-cli\v%VERSION%"
+set "CACHE_DIR=%LOCALAPPDATA%\bcdev\cli\v%VERSION%"
 set "BINARY=%CACHE_DIR%\bcdev.exe"
-set "LOCK_DIR=%USERPROFILE%\.bcdev-cli\.lock"
+set "LOCK_DIR=%LOCALAPPDATA%\bcdev\.lock"
 set "CHECKSUMS_FILE=%SCRIPT_DIR%\checksums.txt"
 
 :: Check if binary exists

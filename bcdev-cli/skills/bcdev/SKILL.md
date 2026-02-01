@@ -14,8 +14,8 @@ This skill provides instructions for using the BC Dev CLI to download symbols, c
 
 The wrapper automatically downloads the correct binary for your platform on first use.
 The binary is cached at:
-- **macOS/Linux**: `~/.bcdev-cli/v{version}/bcdev`
-- **Windows**: `%USERPROFILE%\.bcdev-cli\v{version}\bcdev.exe`
+- **macOS/Linux**: `~/.bcdev/cli/v{version}/bcdev`
+- **Windows**: `%LOCALAPPDATA%\bcdev\cli\v{version}\bcdev.exe`
 
 ## Platform Notes
 
@@ -24,7 +24,7 @@ The CLI is automatically downloaded for your platform on first invocation.
 **Supported platforms:** macOS (arm64, x64), Linux (x64, arm64), Windows (x64)
 
 - **macOS**: May require quarantine removal on first run:
-  `xattr -dr com.apple.quarantine ~/.bcdev-cli/`
+  `xattr -dr com.apple.quarantine ~/.bcdev/cli/`
 - **Linux**: Binary is made executable automatically
 - **Windows**: Runs natively via batch wrapper
 

@@ -23,7 +23,7 @@ The current plugin marketplace stores 4 platform-specific BC Dev CLI plugins, ea
 | Plugin structure | Single universal plugin | Simpler for users, single codebase to maintain |
 | Binary source | Public GitHub releases | Existing infrastructure, no auth required |
 | Checksum verification | SHA256 via checksums.txt | Prevents supply-chain compromise |
-| Cache location | `~/.bcdev-cli/v{version}/` | Simple, cross-platform, survives reinstalls |
+| Cache location | `~/.bcdev/cli/v{version}/` | Same base dir as CLI artifacts, survives reinstalls |
 | Download trigger | Wrapper scripts | Guarantees binary exists before command runs |
 | Version management | Hardcoded + env override | Stable default, power users can override |
 | Windows support | Native batch file | Required for Windows users without bash |
@@ -108,8 +108,8 @@ if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9._]+)?$ ]]; then
   exit 1
 fi
 
-CACHE_DIR="$HOME/.bcdev-cli/v${VERSION}"
-LOCK_FILE="$HOME/.bcdev-cli/.lock"
+CACHE_DIR="$HOME/.bcdev/cli/v${VERSION}"
+LOCK_FILE="$HOME/.bcdev/.lock"
 CHECKSUMS_FILE="$SCRIPT_DIR/checksums.txt"
 
 # Platform detection
@@ -285,9 +285,9 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-set "CACHE_DIR=%USERPROFILE%\.bcdev-cli\v%VERSION%"
+set "CACHE_DIR=%LOCALAPPDATA%\bcdev\cli\v%VERSION%"
 set "BINARY=%CACHE_DIR%\bcdev.exe"
-set "LOCK_DIR=%USERPROFILE%\.bcdev-cli\.lock"
+set "LOCK_DIR=%LOCALAPPDATA%\bcdev\.lock"
 set "CHECKSUMS_FILE=%SCRIPT_DIR%\checksums.txt"
 
 :: Check if binary exists
@@ -406,8 +406,8 @@ Version 2.0.0 signals breaking change (different plugin name).
 
 The wrapper automatically downloads the correct binary for your platform on first use.
 The binary is cached at:
-- **macOS/Linux**: `~/.bcdev-cli/v{version}/bcdev`
-- **Windows**: `%USERPROFILE%\.bcdev-cli\v{version}\bcdev.exe`
+- **macOS/Linux**: `~/.bcdev/cli/v{version}/bcdev`
+- **Windows**: `%LOCALAPPDATA%\bcdev\cli\v{version}\bcdev.exe`
 ```
 
 ### Platform Notes
@@ -420,7 +420,7 @@ The CLI is automatically downloaded for your platform on first invocation.
 **Supported platforms:** macOS (arm64, x64), Linux (x64, arm64), Windows (x64)
 
 - **macOS**: May require quarantine removal on first run:
-  `xattr -dr com.apple.quarantine ~/.bcdev-cli/`
+  `xattr -dr com.apple.quarantine ~/.bcdev/cli/`
 - **Linux**: Binary is made executable automatically
 - **Windows**: Runs natively via batch wrapper
 
@@ -433,20 +433,24 @@ To use a different CLI version:
 
 ```
 # macOS/Linux
-~/.bcdev-cli/
+~/.bcdev/
 ├── .lock/                    # Lock directory (temporary during download)
-├── v0.7/
-│   └── bcdev
-└── v0.8/
-    └── bcdev
+├── cache/                    # CLI artifacts (compiler, symbols) - managed by bcdev
+└── cli/
+    ├── v0.7/
+    │   └── bcdev
+    └── v0.8/
+        └── bcdev
 
 # Windows
-%USERPROFILE%\.bcdev-cli\
+%LOCALAPPDATA%\bcdev\
 ├── .lock\                    # Lock directory (temporary during download)
-├── v0.7\
-│   └── bcdev.exe
-└── v0.8\
-    └── bcdev.exe
+├── cache\                    # CLI artifacts (compiler, symbols) - managed by bcdev
+└── cli\
+    ├── v0.7\
+    │   └── bcdev.exe
+    └── v0.8\
+        └── bcdev.exe
 ```
 
 Versioned directories allow multiple versions to coexist and enable easy rollback.
