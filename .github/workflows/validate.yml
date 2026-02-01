@@ -19,12 +19,11 @@ jobs:
       - name: Validate AL ID Manager
         run: claude plugin validate ./al-id-manager
 
-      - name: Validate BC Dev CLI plugins
-        run: |
-          for plugin in bcdev-cli-win-x64 bcdev-cli-linux-x64 bcdev-cli-linux-arm64 bcdev-cli-osx-arm64; do
-            echo "Validating $plugin..."
-            claude plugin validate ./$plugin
-          done
+      - name: Validate BC Dev CLI
+        run: claude plugin validate ./bcdev-cli
+
+      - name: Validate Marketplace
+        run: claude plugin validate ./.claude-plugin/marketplace.json
 
       - name: Validate JSON syntax
         run: |
@@ -37,23 +36,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check binary exists and is executable
+      - name: Test wrapper downloads and runs CLI
         run: |
-          chmod +x ./bcdev-cli-linux-x64/bin/bcdev
-          ./bcdev-cli-linux-x64/bin/bcdev --help
+          chmod +x ./bcdev-cli/bin/bcdev-ensure
+          ./bcdev-cli/bin/bcdev-ensure --help
 
   smoke-test-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check binary exists and runs
+      - name: Test wrapper downloads and runs CLI
         run: |
-          chmod +x ./bcdev-cli-osx-arm64/bin/bcdev
-          ./bcdev-cli-osx-arm64/bin/bcdev --help
+          chmod +x ./bcdev-cli/bin/bcdev-ensure
+          ./bcdev-cli/bin/bcdev-ensure --help
 
   smoke-test-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check binary exists and runs
-        run: ./bcdev-cli-win-x64/bin/bcdev.exe --help
+      - name: Test wrapper downloads and runs CLI
+        run: .\bcdev-cli\bin\bcdev-ensure.cmd --help
