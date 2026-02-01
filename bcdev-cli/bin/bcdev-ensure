@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Config
+DEFAULT_VERSION="0.7"
+VERSION="${BCDEV_CLI_VERSION:-$DEFAULT_VERSION}"
+REPO="navipartner/BC-Dev-CLI"
+
+# Validate version format (security: prevent path traversal)
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9._]+)?$ ]]; then
+  echo "Error: Invalid version format: $VERSION" >&2
+  echo "Version must match pattern: X.Y or X.Y.Z (e.g., 0.7, 1.0.0)" >&2
+  exit 1
+fi
+
+CACHE_DIR="$HOME/.bcdev/cli/v${VERSION}"
+LOCK_FILE="$HOME/.bcdev/.lock"
+CHECKSUMS_FILE="$SCRIPT_DIR/checksums.txt"
+
+# Platform detection
+detect_platform() {
+  local os arch
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  case "$os" in
+    Darwin) os="osx" ;;
+    Linux)  os="linux" ;;
+    MINGW*|MSYS*|CYGWIN*) os="win" ;;
+    *) echo "Error: Unsupported OS: $os" >&2; exit 1 ;;
+  esac
+
+  case "$arch" in
+    x86_64|amd64) arch="x64" ;;
+    arm64|aarch64) arch="arm64" ;;
+    *) echo "Error: Unsupported architecture: $arch" >&2; exit 1 ;;
+  esac
+
+  # Validate platform is supported
+  local platform="${os}-${arch}"
+  case "$platform" in
+    osx-arm64|osx-x64|linux-x64|linux-arm64|win-x64)
+      echo "$platform"
+      ;;
+    win-arm64)
+      echo "Error: Windows ARM64 is not supported." >&2
+      echo "Supported platforms: osx-arm64, osx-x64, linux-x64, linux-arm64, win-x64" >&2
+      exit 1
+      ;;
+    *)
+      echo "Error: Unsupported platform: $platform" >&2
+      echo "Supported platforms: osx-arm64, osx-x64, linux-x64, linux-arm64, win-x64" >&2
+      exit 1
+      ;;
+  esac
+}
+
+# Get expected checksum from checksums.txt
+get_expected_checksum() {
+  local version="$1" platform="$2"
+  if [[ -f "$CHECKSUMS_FILE" ]]; then
+    grep "^${version} ${platform} " "$CHECKSUMS_FILE" | awk '{print $3}'
+  fi
+}
+
+# Verify SHA256 checksum
+verify_checksum() {
+  local file="$1" expected="$2"
+  local actual
+  if command -v sha256sum &>/dev/null; then
+    actual="$(sha256sum "$file" | awk '{print $1}')"
+  elif command -v shasum &>/dev/null; then
+    actual="$(shasum -a 256 "$file" | awk '{print $1}')"
+  else
+    echo "Warning: Cannot verify checksum (sha256sum/shasum not found)" >&2
+    return 0
+  fi
+
+  if [[ "$actual" != "$expected" ]]; then
+    echo "Error: Checksum verification failed!" >&2
+    echo "Expected: $expected" >&2
+    echo "Actual:   $actual" >&2
+    return 1
+  fi
+}
+
+# Download with curl or wget fallback
+download_file() {
+  local url="$1" output="$2"
+  if command -v curl &>/dev/null; then
+    curl -fSL "$url" -o "$output"
+  elif command -v wget &>/dev/null; then
+    wget -q -O "$output" "$url"
+  else
+    echo "Error: Neither curl nor wget found. Please install one." >&2
+    exit 1
+  fi
+}
+
+# Acquire lock (simple mkdir-based lock)
+acquire_lock() {
+  local lock_dir="$(dirname "$LOCK_FILE")"
+  mkdir -p "$lock_dir"
+  local attempts=0
+  while ! mkdir "$LOCK_FILE" 2>/dev/null; do
+    attempts=$((attempts + 1))
+    if [[ $attempts -ge 30 ]]; then
+      echo "Error: Could not acquire lock after 30 seconds" >&2
+      exit 1
+    fi
+    sleep 1
+  done
+  trap 'rm -rf "$LOCK_FILE"' EXIT
+}
+
+# Release lock
+release_lock() {
+  rm -rf "$LOCK_FILE"
+  trap - EXIT
+}
+
+# Main
+PLATFORM="$(detect_platform)"
+BINARY="$CACHE_DIR/bcdev"
+[[ "$PLATFORM" == win-* ]] && BINARY="$CACHE_DIR/bcdev.exe"
+
+if [[ ! -x "$BINARY" ]]; then
+  acquire_lock
+
+  # Re-check after acquiring lock (another process may have downloaded)
+  if [[ ! -x "$BINARY" ]]; then
+    mkdir -p "$CACHE_DIR"
+    URL="https://github.com/$REPO/releases/download/v${VERSION}/bcdev-${PLATFORM}"
+    [[ "$PLATFORM" == win-* ]] && URL="${URL}.exe"
+
+    TEMP_FILE="$(mktemp)"
+    trap 'rm -f "$TEMP_FILE"; rm -rf "$LOCK_FILE"' EXIT
+
+    echo "Downloading BC Dev CLI v${VERSION} for ${PLATFORM}..." >&2
+    if ! download_file "$URL" "$TEMP_FILE"; then
+      echo "Error: Failed to download BC Dev CLI v${VERSION}" >&2
+      echo "URL: $URL" >&2
+      echo "Check your internet connection or verify the version exists." >&2
+      exit 1
+    fi
+
+    # Verify checksum if available
+    EXPECTED_CHECKSUM="$(get_expected_checksum "$VERSION" "$PLATFORM")"
+    if [[ -n "$EXPECTED_CHECKSUM" ]]; then
+      echo "Verifying checksum..." >&2
+      if ! verify_checksum "$TEMP_FILE" "$EXPECTED_CHECKSUM"; then
+        rm -f "$TEMP_FILE"
+        exit 1
+      fi
+    else
+      echo "Warning: No checksum available for v${VERSION} ${PLATFORM}" >&2
+    fi
+
+    # Atomic move to final location
+    chmod +x "$TEMP_FILE"
+    mv "$TEMP_FILE" "$BINARY"
+    trap 'rm -rf "$LOCK_FILE"' EXIT
+  fi
+
+  release_lock
+fi
+
+exec "$BINARY" "$@"

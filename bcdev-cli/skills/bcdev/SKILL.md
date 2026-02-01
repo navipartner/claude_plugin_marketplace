@@ -9,10 +9,28 @@ This skill provides instructions for using the BC Dev CLI to download symbols, c
 
 ## Binary Location
 
-**Path:** `${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe`
+- **macOS/Linux**: `${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure`
+- **Windows**: `${CLAUDE_PLUGIN_ROOT}\bin\bcdev-ensure.cmd`
 
-**Windows (win-x64):**
-- SmartScreen may warn on first run; click "More info" → "Run anyway"
+The wrapper automatically downloads the correct binary for your platform on first use.
+The binary is cached at:
+- **macOS/Linux**: `~/.bcdev/cli/v{version}/bcdev`
+- **Windows**: `%LOCALAPPDATA%\bcdev\cli\v{version}\bcdev.exe`
+
+## Platform Notes
+
+The CLI is automatically downloaded for your platform on first invocation.
+
+**Supported platforms:** macOS (arm64, x64), Linux (x64, arm64), Windows (x64)
+
+- **macOS**: May require quarantine removal on first run:
+  `xattr -dr com.apple.quarantine ~/.bcdev/cli/`
+- **Linux**: Binary is made executable automatically
+- **Windows**: Runs natively via batch wrapper
+
+To use a different CLI version:
+- macOS/Linux: `export BCDEV_CLI_VERSION=0.8`
+- Windows: `set BCDEV_CLI_VERSION=0.8`
 
 ## Prerequisites
 
@@ -43,15 +61,15 @@ Downloads symbol packages for compilation dependencies. By default, downloads fr
 **NuGet mode (default):**
 ```bash
 # Download symbols from NuGet feeds (no BC server required)
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols -appJsonPath "/path/to/app.json"
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure symbols -appJsonPath "/path/to/app.json"
 
 # With country-specific packages (e.g., us, de, dk)
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols -appJsonPath "/path/to/app.json" -country us
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure symbols -appJsonPath "/path/to/app.json" -country us
 ```
 
 **Server mode (opt-in):**
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols \
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure symbols \
   -appJsonPath "/path/to/app.json" \
   -fromServer \
   -launchJsonPath "/path/to/.vscode/launch.json" \
@@ -75,11 +93,11 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe symbols \
 
 ## Command: bcdev compile
 
-Compiles an AL application. The compiler (alc.exe) is automatically downloaded based on the platform version in app.json.
+Compiles an AL application. The compiler is automatically downloaded based on the platform version in app.json.
 
 **Usage:**
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe compile \
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
   -appJsonPath "/path/to/app.json"
 ```
 
@@ -99,7 +117,7 @@ Publishes an AL application to Business Central.
 
 **Usage (pre-compiled .app):**
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe publish \
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
   -launchJsonPath "/path/to/.vscode/launch.json" \
   -launchJsonName "Your Configuration Name" \
   -appPath "/path/to/MyApp.app" \
@@ -109,7 +127,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe publish \
 
 **Usage (compile and publish):**
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe publish \
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
   -recompile \
   -appJsonPath "/path/to/app.json" \
   -launchJsonPath "/path/to/.vscode/launch.json" \
@@ -137,7 +155,7 @@ Runs tests against Business Central.
 
 **Usage (run all tests):**
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe test \
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure test \
   -launchJsonPath "/path/to/.vscode/launch.json" \
   -launchJsonName "Your Configuration Name" \
   -all \
@@ -147,7 +165,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe test \
 
 **Usage (run specific test):**
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/bcdev.exe test \
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure test \
   -launchJsonPath "/path/to/.vscode/launch.json" \
   -launchJsonName "Your Configuration Name" \
   -CodeunitId 50100 \
