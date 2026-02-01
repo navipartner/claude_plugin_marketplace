@@ -20,52 +20,16 @@
       "tags": ["business-central", "al", "id-management"]
     },
     {
-      "name": "bcdev-cli-win-x64",
-      "description": "BC Dev CLI v0.6 for Windows x64 - download symbols, compile, publish, and test AL apps",
-      "version": "1.0.0",
+      "name": "bcdev-cli",
+      "description": "BC Dev CLI - download symbols, compile, publish, and test AL apps (auto-downloads for your platform)",
+      "version": "2.0.0",
       "author": {
         "name": "NaviPartner",
         "email": "dev@navipartner.com"
       },
-      "source": "./bcdev-cli-win-x64",
+      "source": "./bcdev-cli",
       "category": "development",
-      "tags": ["business-central", "al", "cli", "windows"]
-    },
-    {
-      "name": "bcdev-cli-linux-x64",
-      "description": "BC Dev CLI v0.6 for Linux x64 - download symbols, compile, publish, and test AL apps",
-      "version": "1.0.0",
-      "author": {
-        "name": "NaviPartner",
-        "email": "dev@navipartner.com"
-      },
-      "source": "./bcdev-cli-linux-x64",
-      "category": "development",
-      "tags": ["business-central", "al", "cli", "linux"]
-    },
-    {
-      "name": "bcdev-cli-linux-arm64",
-      "description": "BC Dev CLI v0.6 for Linux ARM64 - download symbols, compile, publish, and test AL apps",
-      "version": "1.0.0",
-      "author": {
-        "name": "NaviPartner",
-        "email": "dev@navipartner.com"
-      },
-      "source": "./bcdev-cli-linux-arm64",
-      "category": "development",
-      "tags": ["business-central", "al", "cli", "linux", "arm64"]
-    },
-    {
-      "name": "bcdev-cli-osx-arm64",
-      "description": "BC Dev CLI v0.6 for macOS Apple Silicon - download symbols, compile, publish, and test AL apps",
-      "version": "1.0.0",
-      "author": {
-        "name": "NaviPartner",
-        "email": "dev@navipartner.com"
-      },
-      "source": "./bcdev-cli-osx-arm64",
-      "category": "development",
-      "tags": ["business-central", "al", "cli", "macos", "arm64"]
+      "tags": ["business-central", "al", "cli", "compile", "publish", "test"]
     }
   ]
 }
