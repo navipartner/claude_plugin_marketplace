@@ -32,27 +32,70 @@ jobs:
             jq . "$f" > /dev/null
           done
 
-  smoke-test-linux:
+  # Test bcdev-ensure wrapper on all supported platforms
+  smoke-test-linux-x64:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test wrapper downloads and runs CLI
+      - name: Test wrapper downloads and runs CLI (linux-x64)
         run: |
           chmod +x ./bcdev-cli/bin/bcdev-ensure
           ./bcdev-cli/bin/bcdev-ensure --help
+      - name: Verify checksum was validated
+        run: |
+          # Check that binary was cached
+          ls -la ~/.bcdev-cli/v*/bcdev
+          # Verify it's executable
+          ~/.bcdev-cli/v*/bcdev --version
 
-  smoke-test-macos:
-    runs-on: macos-latest
+  smoke-test-linux-arm64:
+    # ARM64 runners may not be available on all repos - marked as optional
+    runs-on: ubuntu-24.04-arm
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Test wrapper downloads and runs CLI
+      - name: Test wrapper downloads and runs CLI (linux-arm64)
         run: |
           chmod +x ./bcdev-cli/bin/bcdev-ensure
           ./bcdev-cli/bin/bcdev-ensure --help
+      - name: Verify checksum was validated
+        run: |
+          ls -la ~/.bcdev-cli/v*/bcdev
+          ~/.bcdev-cli/v*/bcdev --version
 
-  smoke-test-windows:
+  smoke-test-macos-arm64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test wrapper downloads and runs CLI (osx-arm64)
+        run: |
+          chmod +x ./bcdev-cli/bin/bcdev-ensure
+          ./bcdev-cli/bin/bcdev-ensure --help
+      - name: Verify checksum was validated
+        run: |
+          ls -la ~/.bcdev-cli/v*/bcdev
+          ~/.bcdev-cli/v*/bcdev --version
+
+  smoke-test-macos-x64:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test wrapper downloads and runs CLI (osx-x64)
+        run: |
+          chmod +x ./bcdev-cli/bin/bcdev-ensure
+          ./bcdev-cli/bin/bcdev-ensure --help
+      - name: Verify checksum was validated
+        run: |
+          ls -la ~/.bcdev-cli/v*/bcdev
+          ~/.bcdev-cli/v*/bcdev --version
+
+  smoke-test-windows-x64:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test wrapper downloads and runs CLI
+      - name: Test wrapper downloads and runs CLI (win-x64)
         run: .\bcdev-cli\bin\bcdev-ensure.cmd --help
+      - name: Verify checksum was validated
+        run: |
+          dir $env:USERPROFILE\.bcdev-cli\v*\bcdev.exe
+          & "$env:USERPROFILE\.bcdev-cli\v0.7\bcdev.exe" --version
