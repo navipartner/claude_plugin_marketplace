@@ -5,7 +5,7 @@ setlocal EnableDelayedExpansion
 set "SCRIPT_DIR=%~dp0.."
 
 :: Config
-set "DEFAULT_VERSION=0.7"
+set "DEFAULT_VERSION=1.0"
 if "%BCDEV_CLI_VERSION%"=="" (set "VERSION=%DEFAULT_VERSION%") else (set "VERSION=%BCDEV_CLI_VERSION%")
 set "REPO=navipartner/BC-Dev-CLI"
 
