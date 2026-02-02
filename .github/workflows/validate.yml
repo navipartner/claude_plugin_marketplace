@@ -64,7 +64,7 @@ jobs:
           ~/.bcdev/cli/v*/bcdev --version
 
   smoke-test-macos-arm64:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Test wrapper downloads and runs CLI (osx-arm64)
@@ -77,7 +77,7 @@ jobs:
           ~/.bcdev/cli/v*/bcdev --version
 
   smoke-test-macos-x64:
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Test wrapper downloads and runs CLI (osx-x64)
