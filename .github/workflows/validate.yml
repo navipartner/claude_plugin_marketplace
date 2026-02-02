@@ -98,4 +98,4 @@ jobs:
       - name: Verify checksum was validated
         run: |
           dir $env:LOCALAPPDATA\bcdev\cli\v*\bcdev.exe
-          & "$env:LOCALAPPDATA\bcdev\cli\v0.7\bcdev.exe" --version
+          & (Get-ChildItem "$env:LOCALAPPDATA\bcdev\cli\v*\bcdev.exe").FullName --version
