@@ -30,6 +30,19 @@ Allows the LLM to grab next AL object ID or next AL table/tableextension/enum/en
 
 **Skill:** `al-id-manager:get-next-id`
 
+#### Configuration
+
+Create a config file at:
+- macOS/Linux: `~/.al-id-manager/config.json`
+- Windows: `%USERPROFILE%\.al-id-manager\config.json`
+
+```json
+{
+  "apiKey": "your-api-key-here",
+  "baseUrl": "https://al-id-manager.npretail.io"
+}
+```
+
 ### BC Dev CLI
 
 Allows the LLM to download symbols, compile, publish apps and run tests against Business Central environments.
