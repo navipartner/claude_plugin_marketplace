@@ -13,14 +13,55 @@ Before requesting an ID, you must read the project's `app.json` to obtain:
 - `id` - The application identifier (used as `appId` in API calls)
 - `idRanges` - Array of allowed ID ranges with `from` and `to` values
 
-## API Configuration
+## Configuration
 
-**Base URL:** `https://al-id-manager.npretail.io`
-**API Key:** `REDACTED_API_KEY`
+Before using this skill, you must set up your API credentials.
+
+### Config File Location
+
+| Platform | Path |
+|----------|------|
+| macOS/Linux | `~/.al-id-manager/config.json` |
+| Windows | `%USERPROFILE%\.al-id-manager\config.json` |
+
+### Setup Instructions
+
+1. **Check if config exists** - Read the config file from the appropriate path
+2. **If missing, create it** - Create the directory and file with this template:
+
+```json
+{
+  "apiKey": "your-api-key-here",
+  "baseUrl": "https://al-id-manager.npretail.io"
+}
+```
+
+3. **Set secure permissions** (macOS/Linux only):
+```bash
+chmod 600 ~/.al-id-manager/config.json
+```
+
+4. **Replace `your-api-key-here`** with your actual API key from your administrator
+
+### Environment Variable Override
+
+You can override the config file by setting the `AL_ID_MANAGER_API_KEY` environment variable:
+- macOS/Linux: `export AL_ID_MANAGER_API_KEY="your-key"`
+- Windows: `set AL_ID_MANAGER_API_KEY=your-key`
+
+**Precedence:** Environment variable > Config file > Error (no default)
+
+### Security Warning
+
+⚠️ The API key is passed as a query parameter (`?key=...`). Query parameters may be logged by proxies, browsers, or monitoring tools. Treat API keys as sensitive credentials.
+
+## API Usage
+
+**Base URL:** Read from config `baseUrl` field (default: `https://al-id-manager.npretail.io`)
 
 All requests must include:
 - Header: `Content-Type: application/json`
-- Query parameter: `?key=REDACTED_API_KEY`
+- Query parameter: `?key={apiKey}` (from config or environment variable)
 
 ## Endpoints
 
@@ -45,10 +86,11 @@ Use when creating a new AL object (table, page, codeunit, report, etc.).
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/object/next/your-app-id?key=REDACTED_API_KEY" \
+curl -X POST "https://al-id-manager.npretail.io/api/object/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"type": "table", "ranges": [{"from": 50000, "to": 99999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 2. Get Next Table Field ID
 
@@ -70,10 +112,11 @@ Use when adding a new field to a `table` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/table/next/your-app-id?key=REDACTED_API_KEY" \
+curl -X POST "https://al-id-manager.npretail.io/api/table/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"tableId": 50100, "ranges": [{"from": 1, "to": 999999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 3. Get Next TableExtension Field ID
 
@@ -95,10 +138,11 @@ Use when adding a new field to a `tableextension` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/tableextension/next/your-app-id?key=REDACTED_API_KEY" \
+curl -X POST "https://al-id-manager.npretail.io/api/tableextension/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"tableextensionId": 50100, "ranges": [{"from": 50000, "to": 99999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 4. Get Next Enum Value ID
 
@@ -120,10 +164,11 @@ Use when adding a new value to an `enum` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/enum/next/your-app-id?key=REDACTED_API_KEY" \
+curl -X POST "https://al-id-manager.npretail.io/api/enum/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"enumId": 50100, "ranges": [{"from": 1, "to": 999999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 5. Get Next EnumExtension Value ID
 
@@ -145,10 +190,11 @@ Use when adding a new value to an `enumextension` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/enumextension/next/your-app-id?key=REDACTED_API_KEY" \
+curl -X POST "https://al-id-manager.npretail.io/api/enumextension/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"enumextensionId": 50100, "ranges": [{"from": 50000, "to": 99999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ## Response Format
 
