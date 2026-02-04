@@ -108,10 +108,24 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
 | `-appJsonPath` | Yes | Path to app.json file |
 | `-packageCachePath` | No | Path to .alpackages folder (defaults to .alpackages in app folder) |
 | `-suppressWarnings` | No | Suppress compiler warnings from output |
+| `-generateReportLayout` | No | Generate report layouts during compilation |
+| `-parallel` | No | Enable parallel compilation for faster builds |
+| `-maxDegreeOfParallelism` | No | Maximum parallel threads (e.g., 4). Requires `-parallel` |
+| `-continueBuildOnError` | No | Continue compilation even when errors occur |
+
+**Example with parallel compilation:**
+```bash
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
+  -appJsonPath "/path/to/app.json" \
+  -parallel \
+  -maxDegreeOfParallelism 4
+```
 
 **Output:** Creates a `.app` file in the same directory as app.json.
 
 ## Command: bcdev publish
+
+> **⚠️ Breaking Change in v1.1:** The `-recompile` flag has been removed. Use `bcdev compile` followed by `bcdev publish` instead.
 
 Publishes an AL application to Business Central.
 
@@ -125,13 +139,17 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
   -Password "bcpassword"
 ```
 
-**Usage (compile and publish):**
+**Compile-then-publish workflow (replaces -recompile):**
 ```bash
+# Step 1: Compile
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
+  -appJsonPath "/path/to/app.json"
+
+# Step 2: Publish the compiled .app
 ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
-  -recompile \
-  -appJsonPath "/path/to/app.json" \
   -launchJsonPath "/path/to/.vscode/launch.json" \
   -launchJsonName "Your Configuration Name" \
+  -appPath "/path/to/MyApp.app" \
   -Username "bcuser" \
   -Password "bcpassword"
 ```
@@ -142,10 +160,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
 |--------|----------|-------------|
 | `-launchJsonPath` | Yes | Path to launch.json |
 | `-launchJsonName` | Yes | Configuration name |
-| `-appPath` | Yes* | Path to .app file (*required if not using -recompile) |
-| `-recompile` | No | Compile before publishing |
-| `-appJsonPath` | Yes* | Path to app.json (*required if using -recompile) |
-| `-packageCachePath` | No | Package cache for recompile |
+| `-appPath` | Yes | Path to .app file |
 | `-Username` | No | For UserPassword auth |
 | `-Password` | No | For UserPassword auth |
 
@@ -210,9 +225,50 @@ When `-Username` and `-Password` are not provided, the CLI uses device code flow
 ## Test Iteration Workflow
 
 When iterating on tests:
-- If **test app code** is modified → compile and publish the test app before running tests
-- If **primary app code** is modified → compile and publish the primary app before running tests
-- Only then run `bcdev test`
+
+1. **If test app code is modified** → Compile and publish the test app before running tests
+
+2. **If primary app code is modified** → Compile and publish the primary app before running tests. If your test app needs to be recompiled for the latest primary app changes, remember to copy the fresh primary `.app` file to the `.alpackages/` folder of the test project before recompiling the test app.
+
+3. **Run tests** → Only after all dependent apps are published:
+```bash
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure test \
+  -launchJsonPath "/path/to/.vscode/launch.json" \
+  -launchJsonName "Your Configuration Name" \
+  -all \
+  -Username "bcuser" \
+  -Password "bcpassword"
+```
+
+**Complete workflow example (primary app change + test):**
+```bash
+# 1. Compile primary app
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile -appJsonPath "/path/to/primary/app.json"
+
+# 2. Publish primary app
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
+  -launchJsonPath "/path/to/.vscode/launch.json" \
+  -launchJsonName "Dev" \
+  -appPath "/path/to/primary/MyApp.app"
+
+# 3. Copy fresh .app to test project's dependencies
+cp /path/to/primary/MyApp.app /path/to/test/.alpackages/
+
+# 4. Recompile test app with updated dependency
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile -appJsonPath "/path/to/test/app.json"
+
+# 5. Publish test app
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
+  -launchJsonPath "/path/to/.vscode/launch.json" \
+  -launchJsonName "Dev" \
+  -appPath "/path/to/test/TestApp.app"
+
+# 6. Run tests
+${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure test \
+  -launchJsonPath "/path/to/.vscode/launch.json" \
+  -launchJsonName "Dev" \
+  -all
+```
 
 ## Finding launch.json Configurations
 
