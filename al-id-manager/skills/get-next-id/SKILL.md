@@ -86,10 +86,11 @@ Use when creating a new AL object (table, page, codeunit, report, etc.).
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/object/next/your-app-id?key=5dd94fef-1873-4ae1-99f5-eaba00d1efaa" \
+curl -X POST "https://al-id-manager.npretail.io/api/object/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"type": "table", "ranges": [{"from": 50000, "to": 99999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 2. Get Next Table Field ID
 
@@ -111,10 +112,11 @@ Use when adding a new field to a `table` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/table/next/your-app-id?key=5dd94fef-1873-4ae1-99f5-eaba00d1efaa" \
+curl -X POST "https://al-id-manager.npretail.io/api/table/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"tableId": 50100, "ranges": [{"from": 1, "to": 999999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 3. Get Next TableExtension Field ID
 
@@ -136,10 +138,11 @@ Use when adding a new field to a `tableextension` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/tableextension/next/your-app-id?key=5dd94fef-1873-4ae1-99f5-eaba00d1efaa" \
+curl -X POST "https://al-id-manager.npretail.io/api/tableextension/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"tableextensionId": 50100, "ranges": [{"from": 50000, "to": 99999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 4. Get Next Enum Value ID
 
@@ -161,10 +164,11 @@ Use when adding a new value to an `enum` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/enum/next/your-app-id?key=5dd94fef-1873-4ae1-99f5-eaba00d1efaa" \
+curl -X POST "https://al-id-manager.npretail.io/api/enum/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"enumId": 50100, "ranges": [{"from": 1, "to": 999999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ### 5. Get Next EnumExtension Value ID
 
@@ -186,10 +190,11 @@ Use when adding a new value to an `enumextension` object.
 
 **Example (curl):**
 ```bash
-curl -X POST "https://al-id-manager.npretail.io/api/enumextension/next/your-app-id?key=5dd94fef-1873-4ae1-99f5-eaba00d1efaa" \
+curl -X POST "https://al-id-manager.npretail.io/api/enumextension/next/your-app-id?key={apiKey}" \
   -H "Content-Type: application/json" \
   -d '{"enumextensionId": 50100, "ranges": [{"from": 50000, "to": 99999}]}'
 ```
+*Replace `{apiKey}` with value from config file or environment variable*
 
 ## Response Format
 
