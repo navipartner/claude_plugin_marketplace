@@ -13,14 +13,55 @@ Before requesting an ID, you must read the project's `app.json` to obtain:
 - `id` - The application identifier (used as `appId` in API calls)
 - `idRanges` - Array of allowed ID ranges with `from` and `to` values
 
-## API Configuration
+## Configuration
 
-**Base URL:** `https://al-id-manager.npretail.io`
-**API Key:** `5dd94fef-1873-4ae1-99f5-eaba00d1efaa`
+Before using this skill, you must set up your API credentials.
+
+### Config File Location
+
+| Platform | Path |
+|----------|------|
+| macOS/Linux | `~/.al-id-manager/config.json` |
+| Windows | `%USERPROFILE%\.al-id-manager\config.json` |
+
+### Setup Instructions
+
+1. **Check if config exists** - Read the config file from the appropriate path
+2. **If missing, create it** - Create the directory and file with this template:
+
+```json
+{
+  "apiKey": "your-api-key-here",
+  "baseUrl": "https://al-id-manager.npretail.io"
+}
+```
+
+3. **Set secure permissions** (macOS/Linux only):
+```bash
+chmod 600 ~/.al-id-manager/config.json
+```
+
+4. **Replace `your-api-key-here`** with your actual API key from your administrator
+
+### Environment Variable Override
+
+You can override the config file by setting the `AL_ID_MANAGER_API_KEY` environment variable:
+- macOS/Linux: `export AL_ID_MANAGER_API_KEY="your-key"`
+- Windows: `set AL_ID_MANAGER_API_KEY=your-key`
+
+**Precedence:** Environment variable > Config file > Error (no default)
+
+### Security Warning
+
+⚠️ The API key is passed as a query parameter (`?key=...`). Query parameters may be logged by proxies, browsers, or monitoring tools. Treat API keys as sensitive credentials.
+
+## API Usage
+
+**Base URL:** Read from config `baseUrl` field (default: `https://al-id-manager.npretail.io`)
 
 All requests must include:
 - Header: `Content-Type: application/json`
-- Query parameter: `?key=5dd94fef-1873-4ae1-99f5-eaba00d1efaa`
+- Query parameter: `?key={apiKey}` (from config or environment variable)
 
 ## Endpoints
 
