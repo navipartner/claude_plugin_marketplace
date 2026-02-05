@@ -36,12 +36,7 @@ Before using this skill, you must set up your API credentials.
 }
 ```
 
-3. **Set secure permissions** (macOS/Linux only):
-```bash
-chmod 600 ~/.al-id-manager/config.json
-```
-
-4. **Replace `your-api-key-here`** with your actual API key from your administrator
+3. **Replace `your-api-key-here`** with your actual API key from your administrator
 
 ### Environment Variable Override
 

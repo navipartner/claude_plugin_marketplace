@@ -108,24 +108,21 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
 | `-appJsonPath` | Yes | Path to app.json file |
 | `-packageCachePath` | No | Path to .alpackages folder (defaults to .alpackages in app folder) |
 | `-suppressWarnings` | No | Suppress compiler warnings from output |
-| `-generateReportLayout` | No | Generate report layouts during compilation |
-| `-parallel` | No | Enable parallel compilation for faster builds |
-| `-maxDegreeOfParallelism` | No | Maximum parallel threads (e.g., 4). Requires `-parallel` |
-| `-continueBuildOnError` | No | Continue compilation even when errors occur |
+| `-generateReportLayout` | No | Generate report layouts (default: false) |
+| `-parallel` | No | Enable parallel compilation (default: true) |
+| `-maxDegreeOfParallelism` | No | Maximum parallel threads (default: 4) |
+| `-continueBuildOnError` | No | Continue compilation even when errors occur (default: true) |
 
-**Example with parallel compilation:**
+**Example with custom parallelism:**
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
   -appJsonPath "/path/to/app.json" \
-  -parallel \
-  -maxDegreeOfParallelism 4
+  -maxDegreeOfParallelism 8
 ```
 
 **Output:** Creates a `.app` file in the same directory as app.json.
 
 ## Command: bcdev publish
-
-> **⚠️ Breaking Change in v1.1:** The `-recompile` flag has been removed. Use `bcdev compile` followed by `bcdev publish` instead.
 
 Publishes an AL application to Business Central.
 
@@ -139,7 +136,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure publish \
   -Password "bcpassword"
 ```
 
-**Compile-then-publish workflow (replaces -recompile):**
+**Compile-then-publish workflow:**
 ```bash
 # Step 1: Compile
 ${CLAUDE_PLUGIN_ROOT}/bin/bcdev-ensure compile \
