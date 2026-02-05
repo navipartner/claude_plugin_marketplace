@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Config
-DEFAULT_VERSION="1.1"
+DEFAULT_VERSION="1.2"
 VERSION="${BCDEV_CLI_VERSION:-$DEFAULT_VERSION}"
 REPO="navipartner/BC-Dev-CLI"
 
