@@ -114,5 +114,39 @@ matching `SOAPAction`.
 ## Non-goals
 
 - Editing npcore's `CLOUD_AGENTS.md` to remove migrated content / point at the skill —
-  a separate follow-up in the npcore repo.
+  a separate follow-up in the npcore repo. When that doc is retired, its non-Crane
+  guidance (control-addin symlink, Fern pointer) must be relocated, not lost.
 - Wrapping the Crane SOAP calls in a binary/CLI — the skill uses `curl`.
+
+## Post-review revisions (GPT-5.5 plan review)
+
+The implementation plan was reviewed by GPT-5.5 (extra-high reasoning) via `pal:clink`.
+Verified findings folded into the plan and skill:
+
+- **Readiness marker (correctness):** credentials are saved before the 35-minute import
+  wait, so a resumed/parallel session could otherwise reuse-and-probe a container still
+  mid-import and crash it. The skill now persists `BC_CONTAINER_READY_AFTER` (epoch) and
+  `BC_CONTAINER_READY`; reuse never probes/restarts until readiness is confirmed, and a
+  not-yet-ready record waits out the remaining window instead.
+- **CLI syntax:** `claude plugin validate <path>` is correct; `--plugin-dir` is not a
+  valid `validate` option (verified on CLI 2.1.146). Plan and the README lines it touches
+  use the positional form.
+- **Marketplace validation gate:** validate `marketplace.json` itself (not just JSON
+  parse). A pre-existing, unrelated warning exists today (`bcdev-cli` entry `2.0.0` vs
+  `plugin.json` `2.3.0`); the new entry must add no new warning. Whether to fix the
+  pre-existing drift is an open decision, not silently bundled in.
+- **Safe `.env` I/O:** quote-escaped upsert + non-`eval` read helpers so special
+  characters in a generated password cannot break parsing or expand.
+- **`.gitignore` safety:** use `git check-ignore` (covers all ignore sources) and append
+  to `.git/info/exclude` rather than dirtying a tracked `.gitignore`; fail closed if
+  `.env` is already tracked.
+- **Fail-closed parsing:** require all four returned values non-empty before writing.
+- **Bounded poll:** per-request `--max-time` and an overall deadline; no infinite wait.
+- **Decision-tree robustness:** require all four stored fields; clear failure branch when
+  restart does not recover.
+- **Triggering:** narrowed the frontmatter `description` to provision/order/reuse/
+  restart/stop intents and deferred compile/publish/test to `bcdev-cli` to avoid
+  over-firing.
+- **SOAPAction provisionality:** `StartContainer`/`StopContainer` action names are
+  inferred from the `CreateCursorContainer` pattern; the skill flags this and says to
+  verify against the service contract if a fault occurs.
