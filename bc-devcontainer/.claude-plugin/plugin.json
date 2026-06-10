@@ -1,0 +1,10 @@
+{
+  "name": "bc-devcontainer",
+  "version": "1.0.0",
+  "description": "Provision, reuse, restart, and stop NaviPartner Crane Business Central development containers to develop and test against",
+  "author": {
+    "name": "NaviPartner",
+    "email": "dev@navipartner.com"
+  },
+  "license": "UNLICENSED"
+}
