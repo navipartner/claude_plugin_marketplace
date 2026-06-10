@@ -13,7 +13,7 @@
 **CLI facts verified for this plan (Claude Code 2.1.146):**
 - `claude plugin validate <path>` is the correct syntax. `--plugin-dir` is **not** a valid option for `validate` (the repo's current README uses it incorrectly; this plan fixes the lines it touches).
 - `claude plugin validate <path>` accepts either a plugin directory or a marketplace manifest.
-- `claude plugin validate .claude-plugin/marketplace.json` currently reports **1 pre-existing warning** unrelated to this work: the `bcdev-cli` marketplace entry says `2.0.0` while its `plugin.json` says `2.3.0`. Non-strict passes with that warning; `--strict` fails on it. This plan does **not** change that entry (see the open decision in the handoff). The new `bc-devcontainer` entry must add **no new** warning.
+- `claude plugin validate .claude-plugin/marketplace.json` currently reports **1 pre-existing warning** unrelated to the new plugin: the `bcdev-cli` marketplace entry says `2.0.0` while its `plugin.json` says `2.3.0`. Non-strict passes with that warning; `--strict` fails on it. **Decision (approved): fix it in this PR** as its own commit in Task 2 (bump the entry to `2.3.0`). After that, both non-strict and `--strict` marketplace validation must pass cleanly, and the new `bc-devcontainer` entry must add **no** warning.
 
 ---
 
