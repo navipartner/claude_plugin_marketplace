@@ -150,3 +150,27 @@ Verified findings folded into the plan and skill:
 - **SOAPAction provisionality:** `StartContainer`/`StopContainer` action names are
   inferred from the `CreateCursorContainer` pattern; the skill flags this and says to
   verify against the service contract if a fault occurs.
+
+## Post-implementation code-review hardening (commit dc2b42e)
+
+After the skill was implemented, GPT-5.5 (extra-high) code-reviewed the shipped
+`SKILL.md` via `pal:clink`. One blocking bug and four should-fix issues were found and
+fixed (re-review confirmed all resolved, no regressions). The shipped
+`bc-devcontainer/skills/provision-bc-container/SKILL.md` is authoritative; the copy
+embedded in the implementation plan is the pre-hardening snapshot.
+
+- **Worktree-safe ignore path (blocking):** `.git` is a *file* in a linked worktree, so
+  the original `echo '.env' >> "$REPO_ROOT/.git/info/exclude"` failed in exactly the
+  parallel-worktree scenario the skill targets. Now resolved via
+  `git rev-parse --git-path info/exclude` from within `$REPO_ROOT`.
+- **`.env` single-quote round-trip:** `get_env_var` now reverses `set_env_var`'s
+  `'\''` escaping, so a generated password containing a quote round-trips correctly
+  (verified for `pa'ss`, `a"b$c d=e`, `tri'ple''quote`).
+- **Readiness embargo fails closed:** missing/non-numeric `BC_CONTAINER_READY_AFTER` now
+  halts instead of polling a container that may still be importing demo data.
+- **`set -e` probe guard:** the reuse probe uses `code=$(curl …) || code=000` so a
+  transport failure routes to the restart branch instead of aborting.
+- **No password leak:** a failed `CreateCursorContainer` response is redacted
+  (`<password>` → `[REDACTED]`) before being surfaced for debugging.
+- **SOAP fault check:** Start/Stop responses are inspected for `<faultstring>` /
+  `<faultcode>` before polling/finishing.
