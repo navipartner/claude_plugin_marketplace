@@ -52,8 +52,12 @@ if git -C "$REPO_ROOT" ls-files --error-unmatch .env >/dev/null 2>&1; then
 fi
 
 # Ensure .env is ignored via ANY mechanism (global excludes, .gitignore, info/exclude).
-# If not already ignored, add it to .git/info/exclude so the working tree stays clean.
-git -C "$REPO_ROOT" check-ignore -q .env || echo '.env' >> "$REPO_ROOT/.git/info/exclude"
+# If not already ignored, add it to the repo's info/exclude so the working tree stays clean.
+# NOTE: in a linked git worktree, `.git` is a FILE, not a directory - never hard-code
+# `.git/info/exclude`. Resolve the real path with `git rev-parse --git-path` (run from
+# REPO_ROOT so a relative result and the append target agree).
+( cd "$REPO_ROOT" && git check-ignore -q .env \
+    || echo '.env' >> "$(git rev-parse --git-path info/exclude)" )
 ```
 
 Read and write `.env` with these helpers. They quote values safely and do **not** rely on
@@ -73,7 +77,9 @@ set_env_var() {  # set_env_var KEY VALUE  (upsert into $ENV_FILE)
 get_env_var() {  # get_env_var KEY  -> prints value
   local key="$1" raw
   raw=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null | tail -n1)
-  raw=${raw#${key}=}; raw=${raw#\'}; raw=${raw%\'}
+  raw=${raw#"${key}="}          # drop KEY=
+  raw=${raw#\'}; raw=${raw%\'}  # drop the outer single quotes
+  raw=${raw//\'\\\'\'/\'}       # reverse set_env_var's '\'' escaping back to a literal '
   printf '%s' "$raw"
 }
 ```
@@ -101,8 +107,11 @@ Read `$ENV_FILE` first.
 3. **All four fields present:**
    - **If `BC_CONTAINER_READY` is not `true`** -> a container was created but never
      confirmed ready (e.g. a previous session was interrupted during the import window).
-     **Do not probe or restart.** Respect the import window: if
-     `now < BC_CONTAINER_READY_AFTER`, sleep the remainder, then go to *Poll until ready*.
+     **Do not probe or restart.** This path needs a **numeric** `BC_CONTAINER_READY_AFTER`;
+     if it is missing or non-numeric the record is corrupt -> **stop and ask the developer**
+     to remove the `BC_CONTAINER_*` lines and re-run (do not poll - the import embargo time
+     is unknown). Otherwise respect the import window: if `now < BC_CONTAINER_READY_AFTER`,
+     sleep the remainder, then go to *Poll until ready*.
    - **If `BC_CONTAINER_READY` is `true`** -> probe once (short timeout). If it answers,
      reuse as-is and you are done. If it does not answer, it is likely stopped -> go to
      *Restart a stopped container*.
@@ -111,7 +120,8 @@ Single short probe:
 
 ```bash
 BC_CONTAINER_URL="$(get_env_var BC_CONTAINER_URL)"
-code=$(curl -s -L --max-time 30 -o /dev/null -w '%{http_code}' "${BC_CONTAINER_URL}/BC")
+# `|| code=000` keeps a transport failure (stopped container) from aborting under `set -e`.
+code=$(curl -s -L --max-time 30 -o /dev/null -w '%{http_code}' "${BC_CONTAINER_URL}/BC") || code=000
 [ "$code" = "200" ] && echo "reuse" || echo "restart"
 ```
 
@@ -165,8 +175,13 @@ names against the actual XML you receive** (extract by reading `$RESPONSE`):
 ```
 
 **Fail closed:** if the response is a SOAP fault, or any of containerId / containerUrl /
-userName / password is missing or empty, **stop and show the raw response** (do not echo
-the password) - do not write a partial record to `$ENV_FILE`.
+userName / password is missing or empty, **stop** and do not write a partial record to
+`$ENV_FILE`. When surfacing the response for debugging, **redact the password first** - a
+partial response can still contain a populated `<password>` element:
+
+```bash
+printf '%s\n' "$RESPONSE" | sed -E 's#(<(cran:)?password>).*(</(cran:)?password>)#\1[REDACTED]\3#g'
+```
 
 **Persist** the four values plus the readiness marker. Saving to a local file is not a
 request to the container, so doing it before the wait is fine; the readiness marker is
@@ -187,6 +202,9 @@ requests crash the import:
 
 ```bash
 now=$(date +%s); ready_after=$(get_env_var BC_CONTAINER_READY_AFTER)
+case "$ready_after" in
+  ''|*[!0-9]*) echo "ERROR: BC_CONTAINER_READY_AFTER missing or non-numeric in $ENV_FILE; refusing to poll (import embargo unknown). Remove the BC_CONTAINER_* lines and re-run."; exit 1 ;;
+esac
 [ "$now" -lt "$ready_after" ] && sleep $(( ready_after - now ))
 ```
 
@@ -199,9 +217,10 @@ Then go to *Poll until ready*.
 No 35-minute wait - demo-data import already happened. Poll immediately after.
 
 > The `StartContainer` / `StopContainer` SOAPAction names below are inferred from the
-> `CreateCursorContainer` pattern (the source only documented their envelope bodies). If a
-> call returns a SOAP fault about an unknown action or method, verify the exact action name
-> against the Crane service contract / WSDL.
+> `CreateCursorContainer` pattern (the source only documented their envelope bodies).
+> **Inspect the response for a `<faultstring>` / `<faultcode>` before polling or finishing.**
+> If a call returns a SOAP fault about an unknown action or method, verify the exact action
+> name against the Crane service contract / WSDL.
 
 ```bash
 BC_CONTAINER_ID="$(get_env_var BC_CONTAINER_ID)"
