@@ -408,12 +408,26 @@ git commit -m "feat(bc-devcontainer): add Crane container provisioning skill"
 
 ---
 
-### Task 2: Register the plugin in the marketplace
+### Task 2: Register the plugin in the marketplace (+ fix pre-existing version drift)
 
 **Files:**
-- Modify: `.claude-plugin/marketplace.json` (append to the `plugins` array, after the `bcdev-cli` entry)
+- Modify: `.claude-plugin/marketplace.json` (fix `bcdev-cli` entry version; append the `bc-devcontainer` entry)
 
-**Step 1: Add the marketplace entry**
+**Step 1: Fix the pre-existing `bcdev-cli` version drift (own commit)**
+
+In `.claude-plugin/marketplace.json`, change the `bcdev-cli` entry's `"version": "2.0.0"` to `"version": "2.3.0"` to match `bcdev-cli/.claude-plugin/plugin.json`.
+
+Verify, then commit this on its own:
+
+```bash
+python3 -c "import json; v=[p['version'] for p in json.load(open('.claude-plugin/marketplace.json'))['plugins'] if p['name']=='bcdev-cli'][0]; assert v=='2.3.0', v; print('ok')"
+claude plugin validate --strict .claude-plugin/marketplace.json   # now passes (drift was the only warning)
+git add .claude-plugin/marketplace.json
+git commit -m "fix(marketplace): align bcdev-cli entry version with plugin.json (2.3.0)"
+```
+Expected: `python3` prints `ok`; `--strict` validation passes.
+
+**Step 2: Add the `bc-devcontainer` marketplace entry**
 
 Append this object to the `plugins` array (add a comma after the existing `bcdev-cli` entry's closing brace):
 
@@ -432,19 +446,17 @@ Append this object to the `plugins` array (add a comma after the existing `bcdev
 }
 ```
 
-**Step 2: Verify marketplace JSON is valid and lists three plugins**
+**Step 3: Verify marketplace JSON is valid and lists three plugins**
 
 Run: `python3 -c "import json; d=json.load(open('.claude-plugin/marketplace.json')); print([p['name'] for p in d['plugins']])"`
 Expected: `['al-id-manager', 'bcdev-cli', 'bc-devcontainer']`
 
-**Step 3: Validate the marketplace manifest; confirm the new entry adds no new warning**
+**Step 4: Validate the marketplace manifest — must now be clean**
 
-Run: `claude plugin validate .claude-plugin/marketplace.json`
-Expected: `✔ Validation passed with warnings` — exactly **1** warning, and it concerns `plugins[1]` / `bcdev-cli` (the pre-existing version drift), **not** `bc-devcontainer`.
+Run: `claude plugin validate --strict .claude-plugin/marketplace.json`
+Expected: `✔ Validation passed` with **no** warnings (the drift is fixed and the new entry's version `1.0.0` matches its `plugin.json`).
 
-If any warning mentions `bc-devcontainer`, fix the new entry until it is clean.
-
-**Step 4: Commit**
+**Step 5: Commit the registration**
 
 ```bash
 git add .claude-plugin/marketplace.json
@@ -549,10 +561,10 @@ done
 ```
 Expected: all three pass.
 
-**Step 2: Validate the marketplace manifest**
+**Step 2: Validate the marketplace manifest (strict, must be clean)**
 
-Run: `claude plugin validate .claude-plugin/marketplace.json`
-Expected: passes; the only warning (if any) is the pre-existing `bcdev-cli` version drift, never `bc-devcontainer`.
+Run: `claude plugin validate --strict .claude-plugin/marketplace.json`
+Expected: `✔ Validation passed` with no warnings (drift fixed in Task 2; new entry clean).
 
 Run: `python3 -c "import json; d=json.load(open('.claude-plugin/marketplace.json')); assert len(d['plugins'])==3; print('ok')"`
 Expected: `ok`
