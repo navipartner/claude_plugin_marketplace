@@ -9,80 +9,37 @@ This skill obtains a Business Central development container through the NaviPart
 SOAP API, then wires up an AL project to develop and test against it. Use it when the
 current git worktree does not already have a working BC environment.
 
-Once a container is ready, use the `bcdev-cli:bcdev` skill to download symbols, compile,
-publish, and run tests against it.
+The steps below describe **intent**, not literal commands - implement each with whatever
+tooling and wait mechanism you prefer. Code blocks are reference data (SOAP bodies, JSON
+config), not scripts to copy verbatim. Once a container is ready, use the `bcdev-cli:bcdev`
+skill to download symbols, compile, publish, and run tests against it.
 
 ## Prerequisites
 
 ### API key: `np_crane_api_key`
 
-Crane requests authenticate with an API key read from the **`np_crane_api_key`**
-environment variable.
+Crane requests authenticate with an API key in the **`np_crane_api_key`** environment
+variable. **Check it is set before doing anything else.** If it is missing, stop and ask
+the developer to configure it (e.g. `export np_crane_api_key="<your-key>"` in their shell
+profile; their NaviPartner administrator issues keys) - do not continue or invent a value.
+Never print, log, or echo the key.
 
-**Before doing anything else, check that it is set:**
+### Credential storage: `.env` at the worktree root
 
-```bash
-[ -n "$np_crane_api_key" ] && echo "np_crane_api_key is set" || echo "MISSING"
-```
+Container credentials live in a `.env` at the **worktree root** (`git rev-parse
+--show-toplevel`) so parallel git worktrees stay isolated and can each target a different
+container. Before writing to it:
 
-If it prints `MISSING`, **stop and ask the developer to configure it** - do not continue
-and do not invent a value:
+- **Fail closed if `.env` is tracked by git** - refuse to store secrets in a tracked file.
+- **Ensure `.env` is git-ignored without dirtying the repo.** If it isn't already ignored,
+  add it to the repo's `info/exclude`. In a linked worktree `.git` is a *file*, not a
+  directory, so resolve the real exclude path with `git rev-parse --git-path info/exclude`
+  rather than hard-coding `.git/info/exclude`.
 
-> The `np_crane_api_key` environment variable is not set. It holds your Crane API
-> subscription key. Please configure it (e.g. add `export np_crane_api_key="<your-key>"`
-> to your shell profile) and ask your NaviPartner administrator for a key if you don't
-> have one, then re-run.
-
-Never print, log, or echo the key's value.
-
-### Credential storage: worktree-local `.env`
-
-Container credentials live in the **repository-root `.env`** so parallel git worktrees
-stay isolated and can each target a different container. Resolve the root, fail closed if
-`.env` is tracked, and make sure it is ignored without dirtying the consuming repo:
-
-```bash
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-ENV_FILE="$REPO_ROOT/.env"
-
-# Never risk committing secrets: refuse if .env is tracked.
-if git -C "$REPO_ROOT" ls-files --error-unmatch .env >/dev/null 2>&1; then
-  echo "ERROR: .env is tracked by git in this repo. Untrack it before storing container credentials."
-  exit 1
-fi
-
-# Ensure .env is ignored via ANY mechanism (global excludes, .gitignore, info/exclude).
-# If not already ignored, add it to the repo's info/exclude so the working tree stays clean.
-# NOTE: in a linked git worktree, `.git` is a FILE, not a directory - never hard-code
-# `.git/info/exclude`. Resolve the real path with `git rev-parse --git-path` (run from
-# REPO_ROOT so a relative result and the append target agree).
-( cd "$REPO_ROOT" && git check-ignore -q .env \
-    || echo '.env' >> "$(git rev-parse --git-path info/exclude)" )
-```
-
-Read and write `.env` with these helpers. They quote values safely and do **not** rely on
-`source`/`eval`, so special characters in a generated password cannot break parsing or
-trigger shell expansion:
-
-```bash
-set_env_var() {  # set_env_var KEY VALUE  (upsert into $ENV_FILE)
-  local key="$1" val="$2" esc
-  esc=${val//\'/\'\\\'\'}                       # escape single quotes
-  touch "$ENV_FILE"
-  grep -v "^${key}=" "$ENV_FILE" > "$ENV_FILE.tmp" 2>/dev/null || true
-  mv "$ENV_FILE.tmp" "$ENV_FILE"
-  printf "%s='%s'\n" "$key" "$esc" >> "$ENV_FILE"
-}
-
-get_env_var() {  # get_env_var KEY  -> prints value
-  local key="$1" raw
-  raw=$(grep "^${key}=" "$ENV_FILE" 2>/dev/null | tail -n1)
-  raw=${raw#"${key}="}          # drop KEY=
-  raw=${raw#\'}; raw=${raw%\'}  # drop the outer single quotes
-  raw=${raw//\'\\\'\'/\'}       # reverse set_env_var's '\'' escaping back to a literal '
-  printf '%s' "$raw"
-}
-```
+Read and write `.env` as simple `KEY='value'` lines. **Quote values and do not rely on
+`source`/`eval`** so special characters in a generated password cannot break parsing or
+trigger shell expansion: escape single quotes when writing a value and reverse that when
+reading it back.
 
 `.env` keys used by this skill:
 
@@ -97,38 +54,29 @@ get_env_var() {  # get_env_var KEY  -> prints value
 
 ## Decision: reuse, restart, or create
 
-Read `$ENV_FILE` first.
+Read `.env` first, then:
 
-1. **No `BC_CONTAINER_ID`** -> go to *Create a container*.
+1. **No `BC_CONTAINER_ID`** -> *Create a container*.
 2. **`BC_CONTAINER_ID` present but any of `BC_CONTAINER_URL` / `BC_CONTAINER_USERNAME` /
-   `BC_CONTAINER_PASSWORD` missing** -> the record is corrupt. **Stop and ask the
-   developer** to remove the `BC_CONTAINER_*` lines from `$ENV_FILE` and re-run. Do not
-   provision a second container while a half-recorded one may exist.
+   `BC_CONTAINER_PASSWORD` missing** -> the record is corrupt. **Stop and ask the developer**
+   to remove the `BC_CONTAINER_*` lines from `.env` and re-run. Do not provision a second
+   container while a half-recorded one may exist.
 3. **All four fields present:**
-   - **If `BC_CONTAINER_READY` is not `true`** -> a container was created but never
-     confirmed ready (e.g. a previous session was interrupted during the import window).
-     **Do not probe or restart.** This path needs a **numeric** `BC_CONTAINER_READY_AFTER`;
-     if it is missing or non-numeric the record is corrupt -> **stop and ask the developer**
-     to remove the `BC_CONTAINER_*` lines and re-run (do not poll - the import embargo time
-     is unknown). Otherwise respect the import window: if `now < BC_CONTAINER_READY_AFTER`,
-     sleep the remainder, then go to *Poll until ready*.
-   - **If `BC_CONTAINER_READY` is `true`** -> probe once (short timeout). If it answers,
-     reuse as-is and you are done. If it does not answer, it is likely stopped -> go to
-     *Restart a stopped container*.
-
-Single short probe:
-
-```bash
-BC_CONTAINER_URL="$(get_env_var BC_CONTAINER_URL)"
-# `|| code=000` keeps a transport failure (stopped container) from aborting under `set -e`.
-code=$(curl -s -L --max-time 30 -o /dev/null -w '%{http_code}' "${BC_CONTAINER_URL}/BC") || code=000
-[ "$code" = "200" ] && echo "reuse" || echo "restart"
-```
+   - **`BC_CONTAINER_READY` is not `true`** -> a container was created but never confirmed
+     ready (e.g. a previous session was interrupted during the import window). **Do not probe
+     or restart.** This path needs a **numeric** `BC_CONTAINER_READY_AFTER`; if it is missing
+     or non-numeric the record is corrupt -> **stop and ask the developer** to remove the
+     `BC_CONTAINER_*` lines and re-run (do not poll - the import embargo time is unknown).
+     Otherwise respect the remaining import window (see *Create a container*), then go to
+     *Poll until ready*.
+   - **`BC_CONTAINER_READY` is `true`** -> probe `<BC_CONTAINER_URL>/BC` once with a short
+     timeout (a transport failure must not abort your script). If it returns HTTP 200, reuse
+     as-is and you are done. Otherwise it is likely stopped -> *Restart a stopped container*.
 
 ## Crane API
 
 All calls are HTTP `POST` to the same endpoint with the same auth header; only the
-`SOAPAction` header and body change.
+`SOAPAction` header and the body change.
 
 - **Endpoint:** `https://api.navipartner.dk/npcase/crane/api/v1/`
 - **Headers:**
@@ -136,19 +84,20 @@ All calls are HTTP `POST` to the same endpoint with the same auth header; only t
   - `Content-Type: text/xml; charset=utf-8`
   - `SOAPAction:` varies per operation (below)
 
+Every body is a SOAP envelope in the `urn:microsoft-dynamics-schemas/codeunit/CraneAPI`
+namespace. **Inspect every response for a `<faultstring>` / `<faultcode>` before
+continuing**, and **redact any `<password>` element before printing a response for
+debugging** - a partial or fault response can still contain a populated password.
+
 ### Create a container
 
 `SOAPAction: urn:microsoft-dynamics-schemas/codeunit/CraneAPI:CreateCursorContainer`
 
-The `CLOUD-CORE` template provisions the latest released BC version. `containerUrl`,
-`userName`, and `password` are **returned** by the API - send them empty.
+The `CLOUD-CORE` template provisions the latest released BC version. Send `containerUrl`,
+`userName`, and `password` **empty** - the API returns them. Body:
 
-```bash
-RESPONSE=$(curl -s -X POST "https://api.navipartner.dk/npcase/crane/api/v1/" \
-  -H "Ocp-Apim-Subscription-Key: ${np_crane_api_key}" \
-  -H "Content-Type: text/xml; charset=utf-8" \
-  -H "SOAPAction: urn:microsoft-dynamics-schemas/codeunit/CraneAPI:CreateCursorContainer" \
-  -d '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cran="urn:microsoft-dynamics-schemas/codeunit/CraneAPI">
+```xml
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cran="urn:microsoft-dynamics-schemas/codeunit/CraneAPI">
    <soapenv:Header/>
    <soapenv:Body>
       <cran:CreateCursorContainer>
@@ -158,12 +107,11 @@ RESPONSE=$(curl -s -X POST "https://api.navipartner.dk/npcase/crane/api/v1/" \
          <cran:password></cran:password>
       </cran:CreateCursorContainer>
    </soapenv:Body>
-</soapenv:Envelope>')
+</soapenv:Envelope>
 ```
 
-**Parse the response.** The API returns the assigned URL, credentials, and container id as
-VAR/return parameters. The response resembles the following - **confirm the exact element
-names against the actual XML you receive** (extract by reading `$RESPONSE`):
+The response carries the container id, URL, and credentials (confirm the exact element
+names against the XML you actually receive):
 
 ```xml
 <CreateCursorContainer_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/CraneAPI">
@@ -175,125 +123,72 @@ names against the actual XML you receive** (extract by reading `$RESPONSE`):
 ```
 
 **Fail closed:** if the response is a SOAP fault, or any of containerId / containerUrl /
-userName / password is missing or empty, **stop** and do not write a partial record to
-`$ENV_FILE`. When surfacing the response for debugging, **redact the password first** - a
-partial response can still contain a populated `<password>` element:
+userName / password is missing or empty, **stop** - do not write a partial record to `.env`.
 
-```bash
-printf '%s\n' "$RESPONSE" | sed -E 's#(<(cran:)?password>).*(</(cran:)?password>)#\1[REDACTED]\3#g'
-```
-
-**Persist** the four values plus the readiness marker. Saving to a local file is not a
-request to the container, so doing it before the wait is fine; the readiness marker is
-what protects any later/parallel session from touching the container too early:
-
-```bash
-set_env_var BC_CONTAINER_ID       "$CONTAINER_ID"
-set_env_var BC_CONTAINER_URL      "$CONTAINER_URL"
-set_env_var BC_CONTAINER_USERNAME "$CONTAINER_USER"
-set_env_var BC_CONTAINER_PASSWORD "$CONTAINER_PASS"
-set_env_var BC_CONTAINER_READY_AFTER "$(( $(date +%s) + 2100 ))"   # 35 minutes
-set_env_var BC_CONTAINER_READY "false"
-```
+Otherwise **persist** all four values, plus `BC_CONTAINER_READY_AFTER` = now + 35 minutes
+(2100s) and `BC_CONTAINER_READY` = `false`. Writing a local file is not a request to the
+container, so persisting before the wait is fine; the readiness marker is what protects a
+later or parallel session from touching the container too early.
 
 **Then wait the full 35 minutes before making ANY request to the container** (including
-health-check polls). The container imports demo data during this window and premature
-requests crash the import:
-
-```bash
-now=$(date +%s); ready_after=$(get_env_var BC_CONTAINER_READY_AFTER)
-case "$ready_after" in
-  ''|*[!0-9]*) echo "ERROR: BC_CONTAINER_READY_AFTER missing or non-numeric in $ENV_FILE; refusing to poll (import embargo unknown). Remove the BC_CONTAINER_* lines and re-run."; exit 1 ;;
-esac
-[ "$now" -lt "$ready_after" ] && sleep $(( ready_after - now ))
-```
-
-Then go to *Poll until ready*.
+health-check polls) - use whatever wait mechanism you prefer. The container imports demo
+data during this window and premature requests crash the import. (When reusing a
+never-confirmed record per the decision above, wait only the time remaining until
+`BC_CONTAINER_READY_AFTER`.) Then go to *Poll until ready*.
 
 ### Restart a stopped container
 
 `SOAPAction: urn:microsoft-dynamics-schemas/codeunit/CraneAPI:StartContainer`
 
-No 35-minute wait - demo-data import already happened. Poll immediately after.
+No 35-minute wait - demo-data import already happened; poll immediately after. The body
+sends the saved `BC_CONTAINER_ID` as `<cran:containerId>`:
 
-> The `StartContainer` / `StopContainer` SOAPAction names below are inferred from the
-> `CreateCursorContainer` pattern (the source only documented their envelope bodies).
-> **Inspect the response for a `<faultstring>` / `<faultcode>` before polling or finishing.**
-> If a call returns a SOAP fault about an unknown action or method, verify the exact action
-> name against the Crane service contract / WSDL.
-
-```bash
-BC_CONTAINER_ID="$(get_env_var BC_CONTAINER_ID)"
-curl -s -X POST "https://api.navipartner.dk/npcase/crane/api/v1/" \
-  -H "Ocp-Apim-Subscription-Key: ${np_crane_api_key}" \
-  -H "Content-Type: text/xml; charset=utf-8" \
-  -H "SOAPAction: urn:microsoft-dynamics-schemas/codeunit/CraneAPI:StartContainer" \
-  -d '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cran="urn:microsoft-dynamics-schemas/codeunit/CraneAPI">
+```xml
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cran="urn:microsoft-dynamics-schemas/codeunit/CraneAPI">
    <soapenv:Header/>
    <soapenv:Body>
       <cran:StartContainer>
-         <cran:containerId>'"${BC_CONTAINER_ID}"'</cran:containerId>
+         <cran:containerId>{BC_CONTAINER_ID}</cran:containerId>
       </cran:StartContainer>
    </soapenv:Body>
-</soapenv:Envelope>'
+</soapenv:Envelope>
 ```
+
+> The `StartContainer` / `StopContainer` SOAPAction names are inferred from the
+> `CreateCursorContainer` pattern (the source only documented their envelope bodies). If a
+> call returns a SOAP fault about an unknown action or method, verify the exact action name
+> against the Crane service contract / WSDL.
 
 Then go to *Poll until ready*. If polling still fails after its timeout, the container is
 likely deleted or stale: **stop and tell the developer** to remove the `BC_CONTAINER_*`
-lines from `$ENV_FILE` and re-run to provision a fresh one.
+lines from `.env` and re-run to provision a fresh one.
 
 ### Stop a container
 
 `SOAPAction: urn:microsoft-dynamics-schemas/codeunit/CraneAPI:StopContainer`
 
-Stop the container when you finish your task to free resources.
-
-```bash
-BC_CONTAINER_ID="$(get_env_var BC_CONTAINER_ID)"
-curl -s -X POST "https://api.navipartner.dk/npcase/crane/api/v1/" \
-  -H "Ocp-Apim-Subscription-Key: ${np_crane_api_key}" \
-  -H "Content-Type: text/xml; charset=utf-8" \
-  -H "SOAPAction: urn:microsoft-dynamics-schemas/codeunit/CraneAPI:StopContainer" \
-  -d '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cran="urn:microsoft-dynamics-schemas/codeunit/CraneAPI">
-   <soapenv:Header/>
-   <soapenv:Body>
-      <cran:StopContainer>
-         <cran:containerId>'"${BC_CONTAINER_ID}"'</cran:containerId>
-      </cran:StopContainer>
-   </soapenv:Body>
-</soapenv:Envelope>'
-```
-
-The credentials and `BC_CONTAINER_READY=true` marker stay in `$ENV_FILE`, so a later
-session restarts this same container (no re-import) via the reuse decision above.
+Stop the container when you finish your task to free resources. The body is identical to
+*Restart a stopped container* but with the wrapper element `<cran:StopContainer>`. The
+credentials and `BC_CONTAINER_READY=true` marker stay in `.env`, so a later session restarts
+this same container (no re-import) via the reuse decision above.
 
 ## Poll until ready
 
-Bounded poll - never loops forever. On success, record readiness:
-
-```bash
-BC_CONTAINER_URL="$(get_env_var BC_CONTAINER_URL)"
-deadline=$(( $(date +%s) + 1200 ))   # up to 20 minutes of polling
-until [ "$(curl -s -L --max-time 30 -o /dev/null -w '%{http_code}' "${BC_CONTAINER_URL}/BC")" = "200" ]; do
-  if [ "$(date +%s)" -ge "$deadline" ]; then
-    echo "ERROR: ${BC_CONTAINER_URL}/BC did not return 200 within 20 minutes. The container may be stopped, deleted, or misconfigured."
-    exit 1
-  fi
-  echo "Container not ready yet, waiting 60s..."
-  sleep 60
-done
-set_env_var BC_CONTAINER_READY "true"
-echo "Container is ready: ${BC_CONTAINER_URL}/BC"
-```
+Poll `<BC_CONTAINER_URL>/BC` until it returns HTTP 200, **bounded** so it never loops
+forever: cap the total wait (~20 minutes) with a short timeout per attempt. On success, set
+`BC_CONTAINER_READY=true`. On timeout, stop and report that the container may be stopped,
+deleted, or misconfigured.
 
 ## Wire up the AL project
 
+Skip this section if the worktree has no AL project - the container is still usable on its
+own (e.g. via the `bcdev-cli:bcdev` skill).
+
 ### launch.json
 
-`launch.json` files are gitignored. Create one per AL project under its
-`.vscode/launch.json` (e.g. the main app and the test app each get their own), pointing at
-the container. The password is **not** stored here - `UserPassword` auth takes it at
-publish/test time:
+`launch.json` files are gitignored. Create one per AL project under its `.vscode/launch.json`
+(e.g. the main app and the test app each get their own), pointing at the container. The
+password is **not** stored here - `UserPassword` auth takes it at publish/test time:
 
 ```json
 {
@@ -311,9 +206,8 @@ publish/test time:
 }
 ```
 
-Substitute the real `BC_CONTAINER_URL` (`get_env_var BC_CONTAINER_URL`). Pass the BC
-username/password from `$ENV_FILE` to the `bcdev-cli:bcdev` skill when downloading
-symbols, publishing, or testing.
+Substitute the real `BC_CONTAINER_URL`. Pass the BC username/password from `.env` to the
+`bcdev-cli:bcdev` skill when downloading symbols, publishing, or testing.
 
 ### app.json version targeting
 
@@ -321,24 +215,18 @@ The container runs a specific BC version. For local compilation, temporarily ali
 `app.json` to it, then restore the original before committing.
 
 1. Determine the container's BC major version (e.g. `BC27`).
-2. Back up the original: `cp app.json app.json.orig`.
+2. Back up the original (e.g. `cp app.json app.json.orig`).
 3. Update `platform`, `application`, `runtime`, and `preprocessorSymbols`:
    - **`runtime = BC_version - 11`** (e.g. `BC27` -> `"runtime": "16.0"`).
    - Set `preprocessorSymbols` to only the target version, e.g. `["BC27", "BC2700"]`.
-4. **Do not commit `app.json` changes.** Restore with `mv app.json.orig app.json` when
-   done.
+4. **Do not commit `app.json` changes.** Restore the original when done.
 
 ## POS testing
 
 To open the POS page directly in BC, append `?page=6150750` to the container URL:
-
-```
-<BC_CONTAINER_URL>/BC?page=6150750
-```
-
-For other pages, use the search function in the top-right of the Role Center.
+`<BC_CONTAINER_URL>/BC?page=6150750`. For other pages, use the search function in the
+top-right of the Role Center.
 
 ## Cleanup
 
-When the task is complete, **stop the container** (see *Stop a container*) to free
-resources.
+When the task is complete, **stop the container** (see *Stop a container*) to free resources.
