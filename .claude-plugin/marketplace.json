@@ -22,7 +22,7 @@
     {
       "name": "bcdev-cli",
       "description": "BC Dev CLI - download symbols, compile, publish, and test AL apps (auto-downloads for your platform)",
-      "version": "2.0.0",
+      "version": "2.3.0",
       "author": {
         "name": "NaviPartner",
         "email": "dev@navipartner.com"
@@ -30,6 +30,18 @@
       "source": "./bcdev-cli",
       "category": "development",
       "tags": ["business-central", "al", "cli", "compile", "publish", "test"]
+    },
+    {
+      "name": "bc-devcontainer",
+      "description": "Provision BC development containers via the NaviPartner Crane API - create, reuse, restart, and stop environments to develop and test against",
+      "version": "1.0.0",
+      "author": {
+        "name": "NaviPartner",
+        "email": "dev@navipartner.com"
+      },
+      "source": "./bc-devcontainer",
+      "category": "development",
+      "tags": ["business-central", "al", "devcontainer", "crane", "provisioning", "environment"]
     }
   ]
 }

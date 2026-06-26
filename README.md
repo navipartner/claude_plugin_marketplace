@@ -18,6 +18,9 @@ claude plugin install al-id-manager@navipartner-bc-tools
 
 # BC Dev CLI (universal - works on all platforms)
 claude plugin install bcdev-cli@navipartner-bc-tools
+
+# BC Dev Container (provision Crane environments)
+claude plugin install bc-devcontainer@navipartner-bc-tools
 ```
 
 ## Plugins
@@ -67,18 +70,43 @@ export BCDEV_CLI_VERSION=0.8
 set BCDEV_CLI_VERSION=0.8
 ```
 
+### BC Dev Container
+
+Provisions Business Central development containers via the NaviPartner Crane API so the LLM can develop and test against a real environment. Creates a new container, reuses or restarts an existing one for the current git worktree, and stops it when done. Pair it with the BC Dev CLI plugin to compile, publish, and test once the container is ready.
+
+**Use when:** You need a BC environment to validate development against and don't already have one running - spinning up, restarting, or tearing down a Crane dev container.
+
+**Skill:** `bc-devcontainer:provision-bc-container`
+
+#### Configuration
+
+The skill authenticates to Crane with an API key read from the `np_crane_api_key` environment variable:
+
+```bash
+# macOS/Linux
+export np_crane_api_key="your-crane-api-key"
+
+# Windows
+set np_crane_api_key=your-crane-api-key
+```
+
+Ask your NaviPartner administrator if you don't have a key. The skill stops and prompts you to configure this variable if it is missing.
+
+Container credentials (URL, username, password, id) are written to the repository root `.env` (gitignored) so parallel git worktrees stay isolated against different environments.
+
 ## Development
 
 ### Validating plugins
 
 ```bash
 # Validate a single plugin
-claude plugin validate --plugin-dir ./al-id-manager
-claude plugin validate --plugin-dir ./bcdev-cli
+claude plugin validate ./al-id-manager
+claude plugin validate ./bcdev-cli
+claude plugin validate ./bc-devcontainer
 
 # Validate all plugins
-for plugin in al-id-manager bcdev-cli; do
-  claude plugin validate --plugin-dir ./$plugin
+for plugin in al-id-manager bcdev-cli bc-devcontainer; do
+  claude plugin validate ./$plugin
 done
 ```
 
@@ -87,6 +115,7 @@ done
 ```bash
 claude --plugin-dir ./al-id-manager
 claude --plugin-dir ./bcdev-cli
+claude --plugin-dir ./bc-devcontainer
 ```
 
 ### Updating BC Dev CLI version

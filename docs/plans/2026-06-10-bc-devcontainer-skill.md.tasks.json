@@ -1,0 +1,10 @@
+{
+  "planPath": "docs/plans/2026-06-10-bc-devcontainer-skill.md",
+  "tasks": [
+    {"id": 7, "subject": "Task 1: Create bc-devcontainer plugin (manifest + skill)", "status": "completed"},
+    {"id": 8, "subject": "Task 2: Fix bcdev-cli version drift + register bc-devcontainer in marketplace", "status": "completed", "blockedBy": [7]},
+    {"id": 9, "subject": "Task 3: Document plugin in README", "status": "completed", "blockedBy": [8]},
+    {"id": 10, "subject": "Task 4: Final end-to-end validation", "status": "completed", "blockedBy": [9]}
+  ],
+  "lastUpdated": "2026-06-10"
+}
